@@ -1,136 +1,197 @@
-import { useEffect, useRef } from "react";
-import Phaser from "phaser";
+import React, { useEffect, useRef } from 'react';
 
-const GatherLikeGame = () => {
-  const gameContainer = useRef(null);
+const CanvasGame = () => {
+  const canvasRef = useRef(null);
+  const gameStateRef = useRef({
+    player: {
+      x: 200,
+      y: 400,
+      width: 52,
+      height: 42,
+      speed: 2,
+      direction: 'front'
+    },
+    camera: {
+      x: 0,
+      y: 0
+    },
+    world: {
+      width: 2000,
+      height: 2000
+    },
+    keys: {
+      up: false,
+      down: false,
+      left: false,
+      right: false
+    },
+    sprites: {
+      front: null,
+      back: null,
+      left: null,
+      right: null,
+      background: null
+    }
+  });
 
   useEffect(() => {
-    const config = {
-      type: Phaser.AUTO,
-      parent: gameContainer.current,
-      width: gameContainer.current.clientWidth,
-      height: gameContainer.current.clientHeight,
-      scene: {
-        preload,
-        create,
-        update,
-      },
-      physics: {
-        default: "arcade",
-        arcade: {
-          debug: false,
-        },
-      },
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const gameState = gameStateRef.current;
+
+    // Set canvas size to match CSS dimensions
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    // Load sprites
+    const loadImage = (src) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = src;
+      });
     };
 
-    const game = new Phaser.Game(config);
+    const loadSprites = async () => {
+      gameState.sprites.front = await loadImage('front (2).png');
+      gameState.sprites.back = await loadImage('back (1).png');
+      gameState.sprites.left = await loadImage('left.png');
+      gameState.sprites.right = await loadImage('righ.png');
+      gameState.sprites.background = await loadImage('/ex.png');
+    };
 
-    function preload() {
-      // Load each directional sprite or use a single spritesheet if available
-      this.load.spritesheet("player-front", "front (2).png", {
-        frameWidth: 32,
-        frameHeight: 42,
-      });
-      this.load.spritesheet("player-back", "back (1).png", {
-        frameWidth: 32,
-        frameHeight: 42,
-      });
-      this.load.spritesheet("player-left", "left.png", {
-        frameWidth: 32,
-        frameHeight: 42,
-      });
-      this.load.spritesheet("player-right", "righ.png", {
-        frameWidth: 32,
-        frameHeight: 40,
-      });
-      this.load.image("background", "/ex.png"); // Ensure path is correct
-    }
+    // Handle keyboard input
+    const handleKeyDown = (e) => {
+      switch (e.key) {
+        case 'ArrowUp': gameState.keys.up = true; break;
+        case 'ArrowDown': gameState.keys.down = true; break;
+        case 'ArrowLeft': gameState.keys.left = true; break;
+        case 'ArrowRight': gameState.keys.right = true; break;
+      }
+    };
 
-    function create() {
-      // Add background tile
-      this.background = this.add.tileSprite(0, 0, 2000, 2000, "background").setOrigin(0, 0);
+    const handleKeyUp = (e) => {
+      switch (e.key) {
+        case 'ArrowUp': gameState.keys.up = false; break;
+        case 'ArrowDown': gameState.keys.down = false; break;
+        case 'ArrowLeft': gameState.keys.left = false; break;
+        case 'ArrowRight': gameState.keys.right = false; break;
+      }
+    };
 
-      // Set world bounds and camera bounds
-      this.cameras.main.setBounds(0, 0, 2000, 2000);
-      this.physics.world.setBounds(0, 0, 2000, 2000);
-
-      // Create animations for each direction
-      this.anims.create({
-        key: "walk-front",
-        frames: this.anims.generateFrameNumbers("player-front", { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1,
-      });
-      this.anims.create({
-        key: "walk-back",
-        frames: this.anims.generateFrameNumbers("player-back", { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1,
-      });
-      this.anims.create({
-        key: "walk-left",
-        frames: this.anims.generateFrameNumbers("player-left", { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1,
-      });
-      this.anims.create({
-        key: "walk-right",
-        frames: this.anims.generateFrameNumbers("player-right", { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1,
-      });
-
-      // Create the player sprite with an initial direction (e.g., front)
-      this.player = this.physics.add.sprite(100, 100, "player-front").setCollideWorldBounds(true);
-      this.player.play("walk-front"); // Initial animation
-
-      // Add a floating name label above the player
-      this.player.nameLabel = this.add
-        .text(0, -20, "Player Name", { fontSize: "14px", color: "#FFFFFF" })
-        .setOrigin(0.5);
-
-      // Make the camera follow the player
-      this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-
-      // Set up controls
-      this.cursors = this.input.keyboard.createCursorKeys();
-    }
-
-    function update() {
-      this.player.setVelocity(0); // Stop movement when no key is pressed
-
-      if (this.cursors.left.isDown) {
-        this.player.setVelocityX(-160);
-        this.player.play("walk-left", true);
-      } else if (this.cursors.right.isDown) {
-        this.player.setVelocityX(160);
-        this.player.play("walk-right", true);
-      } else if (this.cursors.up.isDown) {
-        this.player.setVelocityY(-160);
-        this.player.play("walk-back", true);
-      } else if (this.cursors.down.isDown) {
-        this.player.setVelocityY(160);
-        this.player.play("walk-front", true);
-      } else {
-        this.player.anims.stop(); // Stop animation when idle
+    // Update game state
+    const update = () => {
+      // Update player position based on input
+      if (gameState.keys.left) {
+        gameState.player.x -= gameState.player.speed;
+        gameState.player.direction = 'left';
+      }
+      if (gameState.keys.right) {
+        gameState.player.x += gameState.player.speed;
+        gameState.player.direction = 'right';
+      }
+      if (gameState.keys.up) {
+        gameState.player.y -= gameState.player.speed;
+        gameState.player.direction = 'back';
+      }
+      if (gameState.keys.down) {
+        gameState.player.y += gameState.player.speed;
+        gameState.player.direction = 'front';
       }
 
-      // Update name label position above the player
-      this.player.nameLabel.x = this.player.x;
-      this.player.nameLabel.y = this.player.y - 25;
+      // Keep player within world bounds
+      gameState.player.x = Math.max(0, Math.min(gameState.player.x, gameState.world.width - gameState.player.width));
+      gameState.player.y = Math.max(0, Math.min(gameState.player.y, gameState.world.height - gameState.player.height));
 
-      // Scroll the background image to match camera’s position
-      this.background.tilePositionX = this.cameras.main.scrollX;
-      this.background.tilePositionY = this.cameras.main.scrollY;
-    }
+      // Update camera position to follow player
+      gameState.camera.x = gameState.player.x - canvas.width / 2;
+      gameState.camera.y = gameState.player.y - canvas.height / 2;
 
-    // Clean up Phaser game instance on component unmount
+      // Keep camera within world bounds
+      gameState.camera.x = Math.max(0, Math.min(gameState.camera.x, gameState.world.width - canvas.width));
+      gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, gameState.world.height - canvas.height));
+    };
+
+    // Render game
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw background
+      if (gameState.sprites.background) {
+        const pattern = ctx.createPattern(gameState.sprites.background, 'repeat');
+        ctx.save();
+        ctx.translate(
+          -gameState.camera.x % gameState.sprites.background.width,
+          -gameState.camera.y % gameState.sprites.background.height
+        );
+        ctx.fillStyle = pattern;
+        ctx.fillRect(
+          0,
+          0,
+          canvas.width + gameState.sprites.background.width,
+          canvas.height + gameState.sprites.background.height
+        );
+        ctx.restore();
+      }
+
+      // Draw player
+      const currentSprite = gameState.sprites[gameState.player.direction];
+      if (currentSprite) {
+        ctx.drawImage(
+          currentSprite,
+          0,
+          0,
+          gameState.player.width,
+          gameState.player.height,
+          gameState.player.x - gameState.camera.x,
+          gameState.player.y - gameState.camera.y,
+          gameState.player.width,
+          gameState.player.height
+        );
+
+        // Draw player name
+        ctx.font = '14px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText(
+          'Player Name',
+          gameState.player.x - gameState.camera.x + gameState.player.width / 2,
+          gameState.player.y - gameState.camera.y - 10
+        );
+      }
+    };
+
+    // Game loop
+    const gameLoop = () => {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    };
+
+    // Initialize game
+    const init = async () => {
+      await loadSprites();
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('keyup', handleKeyUp);
+      gameLoop();
+    };
+
+    init();
+
+    // Cleanup
     return () => {
-      game.destroy(true);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
 
-  return <div ref={gameContainer} className="w-full h-full" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="w-full h-full"
+      style={{ imageRendering: 'pixelated' }}
+    />
+  );
 };
 
-export default GatherLikeGame;
+export default CanvasGame;
