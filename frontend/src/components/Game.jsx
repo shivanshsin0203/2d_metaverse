@@ -1,16 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import  { useEffect, useRef } from 'react';
+import io from 'socket.io-client';
 
 const CanvasGame = () => {
   const canvasRef = useRef(null);
+  const socketRef = useRef(null);
   const gameStateRef = useRef({
     player: {
+      id: null,
       x: 200,
       y: 400,
       width: 52,
       height: 42,
-      speed: 2,
-      direction: 'front'
+      speed: 2.3,
+      direction: 'front',
+      name: 'awa'
     },
+    otherPlayers: new Map(),
     camera: {
       x: 0,
       y: 0
@@ -39,9 +44,48 @@ const CanvasGame = () => {
     const ctx = canvas.getContext('2d');
     const gameState = gameStateRef.current;
 
-    // Set canvas size to match CSS dimensions
+    // Set canvas size
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
+
+    // Initialize socket connection
+    socketRef.current = io('http://localhost:3001');
+    
+    // Socket event handlers
+    socketRef.current.on('connect', () => {
+      console.log('Connected to server');
+      gameState.player.id = socketRef.current.id;
+      
+      // Join game
+      socketRef.current.emit('player-join', {
+        name: gameState.player.name
+      });
+    });
+
+    socketRef.current.on('players-sync', (players) => {
+      gameState.otherPlayers.clear();
+      players.forEach(player => {
+        if (player.id !== gameState.player.id) {
+          gameState.otherPlayers.set(player.id, player);
+        }
+      });
+    });
+
+    socketRef.current.on('player-joined', (player) => {
+      if (player.id !== gameState.player.id) {
+        gameState.otherPlayers.set(player.id, player);
+      }
+    });
+
+    socketRef.current.on('player-moved', (player) => {
+      if (player.id !== gameState.player.id) {
+        gameState.otherPlayers.set(player.id, player);
+      }
+    });
+
+    socketRef.current.on('player-left', (playerId) => {
+      gameState.otherPlayers.delete(playerId);
+    });
 
     // Load sprites
     const loadImage = (src) => {
@@ -81,35 +125,47 @@ const CanvasGame = () => {
 
     // Update game state
     const update = () => {
-      // Update player position based on input
+      let moved = false;
+
       if (gameState.keys.left) {
         gameState.player.x -= gameState.player.speed;
         gameState.player.direction = 'left';
+        moved = true;
       }
       if (gameState.keys.right) {
         gameState.player.x += gameState.player.speed;
         gameState.player.direction = 'right';
+        moved = true;
       }
       if (gameState.keys.up) {
         gameState.player.y -= gameState.player.speed;
         gameState.player.direction = 'back';
+        moved = true;
       }
       if (gameState.keys.down) {
         gameState.player.y += gameState.player.speed;
         gameState.player.direction = 'front';
+        moved = true;
       }
 
-      // Keep player within world bounds
+      // Keep player within bounds
       gameState.player.x = Math.max(0, Math.min(gameState.player.x, gameState.world.width - gameState.player.width));
       gameState.player.y = Math.max(0, Math.min(gameState.player.y, gameState.world.height - gameState.player.height));
 
-      // Update camera position to follow player
+      // Update camera
       gameState.camera.x = gameState.player.x - canvas.width / 2;
       gameState.camera.y = gameState.player.y - canvas.height / 2;
-
-      // Keep camera within world bounds
       gameState.camera.x = Math.max(0, Math.min(gameState.camera.x, gameState.world.width - canvas.width));
       gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, gameState.world.height - canvas.height));
+
+      // Emit movement if player moved
+      if (moved && socketRef.current) {
+        socketRef.current.emit('player-move', {
+          x: gameState.player.x,
+          y: gameState.player.y,
+          direction: gameState.player.direction
+        });
+      }
     };
 
     // Render game
@@ -134,31 +190,41 @@ const CanvasGame = () => {
         ctx.restore();
       }
 
-      // Draw player
-      const currentSprite = gameState.sprites[gameState.player.direction];
-      if (currentSprite) {
-        ctx.drawImage(
-          currentSprite,
-          0,
-          0,
-          gameState.player.width,
-          gameState.player.height,
-          gameState.player.x - gameState.camera.x,
-          gameState.player.y - gameState.camera.y,
-          gameState.player.width,
-          gameState.player.height
-        );
+      // Draw function for both player and other players
+      const drawPlayer = (player) => {
+        const sprite = gameState.sprites[player.direction];
+        if (sprite) {
+          ctx.drawImage(
+            sprite,
+            0,
+            0,
+            gameState.player.width,
+            gameState.player.height,
+            player.x - gameState.camera.x,
+            player.y - gameState.camera.y,
+            gameState.player.width,
+            gameState.player.height
+          );
 
-        // Draw player name
-        ctx.font = '14px Arial';
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.fillText(
-          'Player Name',
-          gameState.player.x - gameState.camera.x + gameState.player.width / 2,
-          gameState.player.y - gameState.camera.y - 10
-        );
-      }
+          // Draw player name
+          ctx.font = '14px Arial';
+          ctx.fillStyle = 'white';
+          ctx.textAlign = 'center';
+          ctx.fillText(
+            player.name,
+            player.x - gameState.camera.x + gameState.player.width / 2,
+            player.y - gameState.camera.y - 10
+          );
+        }
+      };
+
+      // Draw other players
+      gameState.otherPlayers.forEach(player => {
+        drawPlayer(player);
+      });
+
+      // Draw main player
+      drawPlayer(gameState.player);
     };
 
     // Game loop
@@ -182,6 +248,9 @@ const CanvasGame = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, []);
 
