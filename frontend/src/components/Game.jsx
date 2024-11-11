@@ -11,9 +11,9 @@ const CanvasGame = () => {
       y: 400,
       width: 52,
       height: 42,
-      speed: 2.3,
+      speed: 2.1,
       direction: 'front',
-      name: 'awa'
+      name: 'Player'
     },
     otherPlayers: new Map(),
     camera: {
