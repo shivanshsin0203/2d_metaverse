@@ -1,13 +1,8 @@
 import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
+import { Player } from "./types";
 
-interface Player {
-  id: string;
-  x: number;
-  y: number;
-  direction: string;
-  name: string;
-}
+
 
 export const initWs = (httpServer: HttpServer) => {
   const io = new Server(httpServer, {

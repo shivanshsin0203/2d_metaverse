@@ -19,9 +19,11 @@ const Homepage = () => {
       <nav className="flex items-center justify-between px-6 py-4">
         {/* Logo */}
         <div className="flex items-center">
-          <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-          </svg>
+        <img 
+            src="https://cdn-icons-png.flaticon.com/512/3054/3054881.png"
+            alt=" Logo"
+            className="w-8 h-8"
+          />
           <span className="ml-2 text-white text-xl font-semibold">Metaverse</span>
         </div>
 
