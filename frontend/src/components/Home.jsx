@@ -18,7 +18,7 @@ const Homepage = () => {
           <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
           </svg>
-          <span className="ml-2 text-white text-xl font-semibold">Gather</span>
+          <span className="ml-2 text-white text-xl font-semibold">Metaverse</span>
         </div>
 
         {/* Navigation Links */}
@@ -42,20 +42,20 @@ const Homepage = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="flex items-center px-6 py-16 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row items-center px-6 py-16 max-w-7xl mx-auto">
         {/* Left Column */}
         <div
-          className={`w-1/2 pr-8 transform transition duration-700 ${
+          className={`w-full md:w-1/2 pr-0 md:pr-8 transform transition duration-700 ${
             showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
           }`}
         >
-          <h1 className="text-6xl font-bold text-white mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6">
             Your Virtual HQ
           </h1>
-          <p className="text-xl text-gray-300 mb-8">
-            Gather brings the best of in-person collaboration to distributed teams.
+          <p className="text-lg md:text-xl text-gray-300 mb-6 md:mb-8">
+            Metaverse brings the best of in-person collaboration to distributed teams.
           </p>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-4">
             <button className="px-6 py-3 rounded-lg bg-[#63E2B7] text-[#242846] font-semibold hover:bg-[#50C89E] transition-colors">
               Get started
             </button>
@@ -67,7 +67,7 @@ const Homepage = () => {
 
         {/* Right Column - Virtual Office Preview with Video */}
         <div
-          className={`w-1/2 transform transition duration-700 delay-200 ${
+          className={`w-full md:w-1/2 mt-8 md:mt-0 transform transition duration-700 delay-200 ${
             showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
           }`}
         >
@@ -75,15 +75,13 @@ const Homepage = () => {
             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
               {/* Video Preview */}
               <video
-                src="/path-to-your-video.mp4" // replace with your video path
+                src="/video/preview.mp4" // replace with your video path
                 autoPlay
                 loop
                 muted
                 className="w-full h-full object-cover"
               ></video>
-              <div className="absolute bottom-4 right-4 text-xs text-gray-500">
-                Preview of virtual office
-              </div>
+             
             </div>
           </div>
         </div>
