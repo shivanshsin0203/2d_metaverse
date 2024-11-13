@@ -1,19 +1,22 @@
 import  { useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import io from 'socket.io-client';
 
-const CanvasGame = () => {
+const CanvasGame = (props) => {
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
+  const randomSpawnX=Math.random() * 1000;
+  const randomSpawnY=Math.random() * 1000;
   const gameStateRef = useRef({
     player: {
       id: null,
-      x: 200,
-      y: 400,
+      x: randomSpawnX,
+      y: randomSpawnY,
       width: 52,
       height: 42,
       speed: 2.1,
       direction: 'front',
-      name: 'Player'
+      name: props.name
     },
     otherPlayers: new Map(),
     camera: {
@@ -58,7 +61,9 @@ const CanvasGame = () => {
       
       // Join game
       socketRef.current.emit('player-join', {
-        name: gameState.player.name
+        name: gameState.player.name,
+        x: gameState.player.x,
+        y: gameState.player.y,
       });
     });
 
@@ -261,6 +266,10 @@ const CanvasGame = () => {
       style={{ imageRendering: 'pixelated' }}
     />
   );
+};
+CanvasGame.propTypes = {
+  name: PropTypes.string.isRequired,
+  gameId: PropTypes.string.isRequired
 };
 
 export default CanvasGame;

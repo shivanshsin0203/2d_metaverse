@@ -1,10 +1,26 @@
 import { useLocation } from "react-router-dom";
 import CanvasGame from "./Game";
-
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
 
 function Space() {
   const location = useLocation();
+  const { user, isAuthenticated, isLoading } = useKindeAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/');
+    }
+    
+  }, [isAuthenticated, isLoading, navigate,user]);
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
+  if (!isAuthenticated) {
+    return null;
+  }
   // Retrieve query parameters from the URL
   const searchParams = new URLSearchParams(location.search);
   const spaceId = searchParams.get('spaceId');
@@ -15,7 +31,7 @@ function Space() {
         </div>
         <div className=" h-[88%] w-screen flex  ">
            <div className=" w-[75%] bg-yellow-300">
-               <CanvasGame/>
+               <CanvasGame name={user.given_name+" "+user.family_name} gameId={spaceId}/>
            </div>
            <div className=" w-[25%] bg-purple-500">
 

@@ -20,13 +20,13 @@ NavigationButton.propTypes = {
 };
 
 // SpaceCard component
-const SpaceCard = ({ title, lastVisited,onDelete}) => {
+const SpaceCard = ({ title, lastVisited,onDelete,onClick}) => {
   const handleDelete = () => {
     onDelete();
   }
   return(
   
-  <div className="relative group">
+  <div className="relative group" onClick={onClick}>
     <div className="absolute top-3 left-3 bg-black/50 text-white px-2 py-1 rounded-full text-sm flex items-center gap-1">
       <div className="w-2 h-2 bg-green-400 rounded-full"></div>
       0
@@ -53,7 +53,8 @@ SpaceCard.propTypes = {
     title: PropTypes.string.isRequired,
     lastVisited: PropTypes.string.isRequired,
     image: PropTypes.string.isRequired,
-    onDelete: PropTypes.func.isRequired
+    onDelete: PropTypes.func.isRequired,
+    onClick: PropTypes.func.isRequired,
 }
 
 // CreateSpaceModal component
@@ -275,7 +276,8 @@ const MySpace = () => {
               title={space.title}
               lastVisited={space.lastModified}
               image={space.image}
-              onDelete={() => handleDeleteSpace(index,space)} 
+              onDelete={() => handleDeleteSpace(index,space)}
+              onClick={() => navigate(`/myspace?spaceId=${space.roomId}`)} 
             />
           ))}
         </div>

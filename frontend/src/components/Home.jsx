@@ -2,12 +2,13 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import {useKindeAuth} from "@kinde-oss/kinde-auth-react";
+import { useNavigate } from 'react-router-dom';
 
 
 const Homepage = () => {
   const [showContent, setShowContent] = useState(false);
   const { login, register} = useKindeAuth();
-  
+  const navigate = useNavigate();
   // Fade-in animation effect
   useEffect(() => {
     setShowContent(true);
@@ -38,7 +39,7 @@ const Homepage = () => {
 
         {/* CTA Buttons */}
         <div className="flex items-center space-x-4">
-          <button  className="px-4 py-2 rounded-lg bg-[#63E2B7] text-[#242846] font-semibold hover:bg-[#50C89E] transition-colors">
+          <button onClick={()=>{navigate('/space')}}  className="px-4 py-2 rounded-lg bg-[#63E2B7] text-[#242846] font-semibold hover:bg-[#50C89E] transition-colors">
             Get started
           </button>
           <button onClick={register} className="px-4 py-2 rounded-lg text-white border border-white hover:bg-white/10 transition-colors">
@@ -62,9 +63,11 @@ const Homepage = () => {
             Metaverse brings the best of in-person collaboration to distributed teams.
           </p>
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-4">
-            <button className="px-6 py-3 rounded-lg bg-[#63E2B7] text-[#242846] font-semibold hover:bg-[#50C89E] transition-colors">
+            
+            <button onClick={()=>{navigate('/space')}} className="px-6 py-3 rounded-lg bg-[#63E2B7] text-[#242846] font-semibold hover:bg-[#50C89E] transition-colors">
               Get started
             </button>
+            
             <button onClick={login} className="flex items-center px-6 py-3 rounded-lg text-white hover:bg-white/10 transition-colors">
               Or just login <ChevronRight className="ml-2 w-4 h-4" />
             </button>

@@ -18,11 +18,11 @@ export const initWs = (httpServer: HttpServer) => {
     console.log("Player connected:", socket.id);
 
     // Handle new player joining
-    socket.on("player-join", (data: { name?: string }) => {
+    socket.on("player-join", (data: { name?: string,x?:number,y?:number }) => {
       const player: Player = {
         id: socket.id,
-        x: Math.random() * 1000,
-        y: Math.random() * 1000,
+        x:data.x || Math.random() * 1000,
+        y:data.y || Math.random() * 1000,
         direction: "front",
         name: data.name || `Player ${players.size + 1}`,
       };

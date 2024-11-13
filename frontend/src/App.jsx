@@ -16,6 +16,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path='/space' element={<MySpace />} />
+        <Route path="/myspace" element={<Space />} />
        </Routes>
     </Router>
     </KindeProvider>
