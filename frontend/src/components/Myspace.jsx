@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Calendar, Users, HelpCircle, Globe, Search, MoreVertical, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Users, Globe, Search,  Plus, LogOut,  DeleteIcon } from 'lucide-react';
 import PropTypes from 'prop-types';
-
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 // NavigationButton component
 const NavigationButton = ({ children, isActive = false }) => (
   <button
@@ -18,19 +20,20 @@ NavigationButton.propTypes = {
 };
 
 // SpaceCard component
-// SpaceCard component
-
-
-
-const SpaceCard = ({ title, lastVisited, image }) => (
+const SpaceCard = ({ title, lastVisited,onDelete}) => {
+  const handleDelete = () => {
+    onDelete();
+  }
+  return(
+  
   <div className="relative group">
     <div className="absolute top-3 left-3 bg-black/50 text-white px-2 py-1 rounded-full text-sm flex items-center gap-1">
       <div className="w-2 h-2 bg-green-400 rounded-full"></div>
       0
     </div>
-    <div className="relative overflow-hidden rounded-lg group-hover:ring-2 ring-[#63E2B7] transition-all">
+    <div className="relative overflow-hidden rounded-lg group-hover:ring-2 ring-[#63E2B7] transition-all pb-10">
       <img
-        src={image}
+        src="https://i.ytimg.com/vi/60zpPbY1DLA/maxresdefault.jpg"
         alt={title}
         className="w-full h-48 object-cover"
       />
@@ -38,23 +41,151 @@ const SpaceCard = ({ title, lastVisited, image }) => (
         <span className="text-white font-medium">{title}</span>
         <div className="flex items-center gap-2">
           <span className="text-gray-300 text-sm">{lastVisited}</span>
-          <button className="text-white hover:bg-white/20 p-1 rounded">
-            <MoreVertical size={16} />
+          <button onClick={handleDelete} className="text-white hover:bg-white/20 p-1 rounded">
+            <DeleteIcon size={16} />
           </button>
         </div>
       </div>
     </div>
   </div>
-);
+)};
 SpaceCard.propTypes = {
     title: PropTypes.string.isRequired,
     lastVisited: PropTypes.string.isRequired,
     image: PropTypes.string.isRequired,
+    onDelete: PropTypes.func.isRequired
 }
+
+// CreateSpaceModal component
+const CreateSpaceModal = ({ onClose, onCreate }) => {
+CreateSpaceModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  onCreate: PropTypes.func.isRequired,
+};
+  const [title, setTitle] = useState('');
+  const [name, setName] = useState('');
+  const [isCreated, setIsCreated] = useState(false);
+
+  const handleCreate = () => {
+    if (title && name) {
+      setIsCreated(true);
+      onCreate({ title, lastVisited: 'Just now', image: '/api/placeholder/400/300' });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-6 w-80 relative">
+        {!isCreated ? (
+          <>
+            <h2 className="text-xl font-semibold mb-4">Create Space</h2>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title"
+              className="w-full mb-4 p-2 border rounded-lg focus:outline-none"
+            />
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your Name"
+              className="w-full mb-4 p-2 border rounded-lg focus:outline-none"
+            />
+            <button
+              onClick={handleCreate}
+              className="w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition"
+            >
+              Create
+            </button>
+          </>
+        ) : (
+          <div className="text-center space-x-3">
+            <p className="text-lg font-semibold mb-4">Space Created!</p>
+            <button className="bg-green-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-600 transition mb-2">
+              Share
+            </button>
+            <button
+              onClick={onClose}
+              className="bg-blue-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-600 transition"
+            >
+              Join
+            </button>
+          </div>
+        )}
+        <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
+function convertToIST(isoString) {
+  // Create a Date object from the ISO string
+  const date = new Date(isoString);
+
+  // Options for formatting the date to "DD-MM-YYYY HH:MM:SS" in IST
+  const options = {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      
+      hour12: false
+  };
+
+  // Format the date to a readable IST format
+  return new Intl.DateTimeFormat("en-IN", options).format(date);
+}
+
+
+
 // MySpace component
 const MySpace = () => {
   const [activeTab, setActiveTab] = useState('Last Visited');
-  
+  const { user, isAuthenticated, isLoading, logout } = useKindeAuth();
+  const [spaces, setSpaces] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/');
+    }
+    else{
+      async function getSpaces(){
+      const spaces= await axios.post("http://localhost:3001/getspace", {email: user.email});
+      console.log(spaces.data)
+      spaces.data.forEach((space)=>{
+        const istdate=convertToIST(space.lastModified);
+        space.lastModified=istdate;
+      });
+      setSpaces(spaces.data);
+      }
+      getSpaces();
+    }
+  }, [isAuthenticated, isLoading, navigate,user]);
+
+  const handleCreateSpace = async(newSpace) => {
+    const result= await axios.post("http://localhost:3001/newspace", {email: user.email,roomId:Math.floor(100000 + Math.random() * 900000), title: newSpace.title});
+    const istdate=convertToIST(result.data.lastModified);
+    result.data.lastModified=istdate;
+    setSpaces([...spaces, result.data]);
+  };
+  const handleDeleteSpace = (index,space) => {
+    const updatedSpaces = spaces.filter((_, i) => i !== index);
+    setSpaces(updatedSpaces);
+    axios.post("http://localhost:3001/deletespace", {email: user.email,roomId:space.roomId});
+  };
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-[#242846]">
       {/* Navigation Bar */}
@@ -80,20 +211,27 @@ const MySpace = () => {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          <NavigationButton>
-            <HelpCircle size={20} />
-            Resources
-          </NavigationButton>
+          <img
+            src={user.picture}
+            alt="User Avatar"
+            className="w-8 h-8 rounded-full"
+          />
+          <span className="text-white font-medium">{user.given_name}</span>
           <NavigationButton>
             <Globe size={20} />
             English
           </NavigationButton>
-          <img
-            src="/api/placeholder/32/32"
-            alt="User Avatar"
-            className="w-8 h-8 rounded-full"
-          />
-          <button className="bg-[#63E2B7] text-[#242846] px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center gap-2">
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:text-white text-gray-300 hover:bg-red-400"
+          >
+            <LogOut size={20} />
+            Logout
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-[#63E2B7] text-[#242846] px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center gap-2"
+          >
             <Plus size={20} />
             Create Space
           </button>
@@ -131,14 +269,22 @@ const MySpace = () => {
 
         {/* Spaces Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <SpaceCard
-            title="Sample Space"
-            lastVisited="9 days ago"
-            image="/api/placeholder/400/300"
-          />
-          {/* Add more SpaceCards as needed */}
+          {spaces.map((space, index) => (
+            <SpaceCard
+              key={index}
+              title={space.title}
+              lastVisited={space.lastModified}
+              image={space.image}
+              onDelete={() => handleDeleteSpace(index,space)} 
+            />
+          ))}
         </div>
       </main>
+
+      {/* Modal for Creating Space */}
+      {showModal && (
+        <CreateSpaceModal onClose={() => setShowModal(false)} onCreate={handleCreateSpace} />
+      )}
     </div>
   );
 };

@@ -14,5 +14,14 @@ export function initHttp(app: Express) {
     await space.save();
     res.send(space);
    });
-
+   app.post('/getspace', async(req, res) => {
+         const {email} = req.body;
+         const spaces = await Space.find({email});
+            res.send(spaces);
+    });
+    app.post('/deletespace', async(req, res) => {
+        const {email, roomId} = req.body;
+        const space = await Space.findOneAndDelete({email, roomId});
+        res.send(space);
+    });
 }

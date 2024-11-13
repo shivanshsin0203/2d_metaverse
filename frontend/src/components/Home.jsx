@@ -6,7 +6,7 @@ import {useKindeAuth} from "@kinde-oss/kinde-auth-react";
 
 const Homepage = () => {
   const [showContent, setShowContent] = useState(false);
-  const { login, register, logout} = useKindeAuth();
+  const { login, register} = useKindeAuth();
   
   // Fade-in animation effect
   useEffect(() => {
@@ -65,7 +65,7 @@ const Homepage = () => {
             <button className="px-6 py-3 rounded-lg bg-[#63E2B7] text-[#242846] font-semibold hover:bg-[#50C89E] transition-colors">
               Get started
             </button>
-            <button onClick={logout} className="flex items-center px-6 py-3 rounded-lg text-white hover:bg-white/10 transition-colors">
+            <button onClick={login} className="flex items-center px-6 py-3 rounded-lg text-white hover:bg-white/10 transition-colors">
               Or just login <ChevronRight className="ml-2 w-4 h-4" />
             </button>
           </div>
