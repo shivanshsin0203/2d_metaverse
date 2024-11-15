@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { Server as HttpServer } from "http";
+import { get, Server as HttpServer } from "http";
 
 interface Player {
   id: string;
@@ -51,6 +51,16 @@ export const initWs = (httpServer: HttpServer) => {
 
   io.on("connection", (socket: Socket) => {
     console.log("Player connected:", socket.id);
+   //Chat Logic 
+      socket.on("chatConnect", (data: { name: string; profile: string;spaceId:string }) => {
+      socket.join(data.spaceId);
+      socket.to(data.spaceId).emit("chatMembers", getPlayersInRoom(data.spaceId));
+      });
+      socket.on('sendMessage', (data: { sender:string;message:string;timestamp:string;roomId:string,profile:string}) => {
+        console.log("Broadcasting message:", data);
+        socket.to(data.roomId).emit('receiveMessage', data);
+      });
+    // Game logic
     let currentRoom: string | null = null;
 
     socket.on("player-join", (data: { 
@@ -123,7 +133,7 @@ export const initWs = (httpServer: HttpServer) => {
         
         // Remove player from room state
         removePlayerFromRoom(currentRoom, socket.id);
-        
+        socket.to(currentRoom).emit("chatMembers", getPlayersInRoom(currentRoom));
         console.log(`Player ${socket.id} left room ${currentRoom}`);
       }
     });
