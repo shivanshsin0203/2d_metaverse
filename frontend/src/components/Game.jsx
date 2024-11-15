@@ -64,6 +64,7 @@ const CanvasGame = (props) => {
         name: gameState.player.name,
         x: gameState.player.x,
         y: gameState.player.y,
+        room: props.gameId,
       });
     });
 
@@ -168,7 +169,8 @@ const CanvasGame = (props) => {
         socketRef.current.emit('player-move', {
           x: gameState.player.x,
           y: gameState.player.y,
-          direction: gameState.player.direction
+          direction: gameState.player.direction,
+          room: props.gameId,
         });
       }
     };

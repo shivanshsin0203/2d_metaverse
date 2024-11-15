@@ -6,13 +6,15 @@ import { useEffect } from "react";
 
 function Space() {
   const location = useLocation();
+ 
   const { user, isAuthenticated, isLoading } = useKindeAuth();
   const navigate = useNavigate();
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/');
     }
-    
+   
   }, [isAuthenticated, isLoading, navigate,user]);
   if (isLoading) {
     return <div>Loading...</div>;
@@ -26,18 +28,18 @@ function Space() {
   const spaceId = searchParams.get('spaceId');
   return (
     <div className='flex flex-col w-screen h-screen '>
-        <div  className=" w-[100%] h-[7%] bg-red-500">
+        <div  className=" w-[100%] h-[5%] bg-[#1E2031]">
            {`Up Bar ${spaceId}`}
         </div>
-        <div className=" h-[88%] w-screen flex  ">
+        <div className=" h-[92%] w-screen flex  ">
            <div className=" w-[75%] bg-yellow-300">
-               <CanvasGame name={user.given_name+" "+user.family_name} gameId={spaceId}/>
+               <CanvasGame name={user.given_name+" "+user.family_name} gameId={spaceId}  />
            </div>
-           <div className=" w-[25%] bg-purple-500">
+           <div className=" w-[25%] bg-[#202540] border-">
 
            </div>
         </div>
-        <div className=" w-screen h-[8%] bg-green-600">
+        <div className=" w-screen h-[6%] bg-[#202540]">
             Down Bar
         </div>
     </div>
