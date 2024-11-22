@@ -1,7 +1,7 @@
 import  { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import io from 'socket.io-client';
-
+import Peer from 'peerjs';
 const CanvasGame = (props) => {
   const canvasRef = useRef(null);
   const socketRef = useRef(null);

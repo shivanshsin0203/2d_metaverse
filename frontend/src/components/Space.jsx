@@ -2,8 +2,8 @@ import { useLocation } from "react-router-dom";
 import CanvasGame from "./Game";
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useNavigate } from 'react-router-dom';
-import { useEffect,useState } from "react";
-import {DoorOpen, MessageCircle, Share2, UsersRound} from "lucide-react"
+import { useEffect,useRef,useState } from "react";
+import {DoorOpen, MessageCircle, Share2, UsersRound,Mic,MicOff,Video,VideoOff} from "lucide-react"
 import { io } from "socket.io-client";
 function Space() {
   const location = useLocation();
@@ -16,7 +16,9 @@ function Space() {
   const [chat,setChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [message, setMessage] = useState("");
-
+  const yourStream=useRef(null);
+  const [video,setVideo]=useState(true);
+  const [audio,setAudio]=useState(true);
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/');
@@ -32,9 +34,17 @@ function Space() {
         console.log(data)
         setChatMembers(data)
       });
+      if(!video){
+        yourStream.current.srcObject=null;
+      }
+      
+      navigator.mediaDevices.getUserMedia({video:video,audio:audio}).then((stream)=>{
+        yourStream.current.srcObject=stream;
+        yourStream.current.play();
+      })
       
     }
-  }, [isAuthenticated, isLoading, navigate,user,spaceId]);
+  }, [isAuthenticated, isLoading, navigate,user,spaceId,video,audio]);
   useEffect(() => {
     if (socket) {
       const handleReceiveMessage = (msg) => {
@@ -167,12 +177,14 @@ function Space() {
             alt=" Logo"
             className="w-8 h-8"
           />
-        <div className=" ml-[3%] h-[80%] flex  bg-[#2D335A] space-x-2 rounded-lg p-2">
-            <img src={user.picture} className=" w-6 h-6 rounded-full" >
-            </img>
+        <div className=" ml-[3%] h-[80%] flex  bg-[#2D335A] space-x-2 rounded-lg items-center justify-center  ">
+            <video muted ref={yourStream} className=" w-14 h-8 " >
+            </video>
             <span className=" text-sm text-gray-600">|</span>
             <span className=" text-gray-400 text-sm" >{user.given_name+" "+user.family_name} </span>
             <div className=" rounded-full bg-green-500 w-2 h-2"></div>
+            {audio?<Mic size={20} className="text-gray-300 m-2 cursor-pointer" onClick={()=>{setAudio(false)}} />:<MicOff size={20} className=" bg-red-500 text-gray-300 m-2 cursor-pointer" onClick={()=>{setAudio(true)}} />}
+            {video?<Video size={20} className="text-gray-300 m-2 cursor-pointer mr-2" onClick={()=>{setVideo(false)}} />:<VideoOff size={20} className="mr-2 bg-red-500 text-gray-300 m-2 cursor-pointer" onClick={()=>{setVideo(true)}} />}
         </div>
           <MessageCircle onClick={()=>{switchChat(true)}} size={20} className="text-gray-300 m-2 cursor-pointer ml-[65%]" />
           <div className=" flex justify-center items-center ml-4">
