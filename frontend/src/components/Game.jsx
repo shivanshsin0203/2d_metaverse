@@ -1,10 +1,15 @@
-import  { useEffect, useRef } from 'react';
+import  { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import io from 'socket.io-client';
 import Peer from 'peerjs';
 const CanvasGame = (props) => {
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
+  const [peerId, setPeerId] = useState(null);
+  const callsRef = useRef(new Map());
+  const peerRef = useRef(null);
+  const peerIdref=useRef(null);
+  const localStreamRef = useRef(null);
   const randomSpawnX=Math.random() * 1000;
   const randomSpawnY=Math.random() * 1000;
   const gameStateRef = useRef({
@@ -50,21 +55,54 @@ const CanvasGame = (props) => {
     // Set canvas size
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-
-    // Initialize socket connection
     socketRef.current = io('http://localhost:3001');
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then((stream) => {
+      localStreamRef.current = stream;
+    })
+    .catch((err) => {
+      console.error("Failed to access media devices:", err);
+    });
+    async function getPeer(){
+      try{
+    peerRef.current = new Peer();
+    peerRef.current.on('open', (id) => {
+      setPeerId(id+"");
+      peerIdref.current=id;
+    });}
+    catch(err){
+      console.log(err)
+    }
+    }
+    getPeer();
+    peerRef.current.on('call', (call) => {
+      // Answer incoming calls
+      if (localStreamRef.current) {
+        call.answer(localStreamRef.current);
+  
+        call.on('stream', (remoteStream) => {
+          callsRef.current.set(call.peer, remoteStream);
+        });
+      }
+    });
+    // Initialize socket connection
+    
     
     // Socket event handlers
     socketRef.current.on('connect', () => {
       console.log('Connected to server');
       gameState.player.id = socketRef.current.id;
       
+      console.log(peerId+"PeerId")
+      console.log(peerRef+"PeerRef")
+      console.log(peerIdref+"PeerIdRef")
       // Join game
       socketRef.current.emit('player-join', {
         name: gameState.player.name,
         x: gameState.player.x,
         y: gameState.player.y,
         room: props.gameId,
+        peerId: peerId
       });
     });
 
@@ -73,6 +111,7 @@ const CanvasGame = (props) => {
       players.forEach(player => {
         if (player.id !== gameState.player.id) {
           gameState.otherPlayers.set(player.id, player);
+          console.log("Player sync:", player);
         }
       });
     });
@@ -80,6 +119,7 @@ const CanvasGame = (props) => {
     socketRef.current.on('player-joined', (player) => {
       if (player.id !== gameState.player.id) {
         gameState.otherPlayers.set(player.id, player);
+        console.log("Player joined:", player);
       }
     });
 
@@ -163,6 +203,9 @@ const CanvasGame = (props) => {
       gameState.camera.y = gameState.player.y - canvas.height / 2;
       gameState.camera.x = Math.max(0, Math.min(gameState.camera.x, gameState.world.width - canvas.width));
       gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, gameState.world.height - canvas.height));
+      
+      
+    
 
       // Emit movement if player moved
       if (moved && socketRef.current) {
@@ -262,11 +305,33 @@ const CanvasGame = (props) => {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full"
-      style={{ imageRendering: 'pixelated' }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full"
+        style={{ imageRendering: 'pixelated' }}
+      />
+      {Array.from(callsRef.current.entries()).map(([id, stream]) => (
+        <video
+        key={id}
+        autoPlay
+        playsInline
+        className="absolute"
+        style={{
+          top: `0px`,
+          left: `0px`,
+          width: '100px',
+          height: '100px',
+        }}
+        ref={(video) => {
+          if (video && stream) {
+            console.log("Setting video stream for:", id);
+            video.srcObject = stream;
+          }
+        }}
+        />
+      ))}
+    </>
   );
 };
 CanvasGame.propTypes = {

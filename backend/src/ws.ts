@@ -8,6 +8,7 @@ interface Player {
   direction: string;
   name: string;
   room: string;
+  peerId?: string;
 }
 
 interface RoomState {
@@ -68,6 +69,7 @@ export const initWs = (httpServer: HttpServer) => {
       x?: number;
       y?: number;
       room: string;
+      peerId?: string;
     }) => {
       // Leave previous room if exists
       if (currentRoom) {
@@ -86,6 +88,7 @@ export const initWs = (httpServer: HttpServer) => {
         direction: "front",
         name: data.name || `Player ${socket.id.slice(0, 4)}`,
         room: roomId,
+        peerId: data.peerId,
       };
 
       // Join socket.io room
@@ -121,6 +124,7 @@ export const initWs = (httpServer: HttpServer) => {
 
         // Broadcast movement to others in the same room
         socket.to(data.room).emit("player-moved", player);
+        
       }
     });
 
