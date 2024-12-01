@@ -55,7 +55,7 @@ export const initWs = (httpServer: HttpServer) => {
    //Chat Logic 
       socket.on("chatConnect", (data: { name: string; profile: string;spaceId:string }) => {
       socket.join(data.spaceId);
-      socket.to(data.spaceId).emit("chatMembers", getPlayersInRoom(data.spaceId));
+      
       });
       socket.on('sendMessage', (data: { sender:string;message:string;timestamp:string;roomId:string,profile:string}) => {
         console.log("Broadcasting message:", data);
@@ -90,7 +90,7 @@ export const initWs = (httpServer: HttpServer) => {
         room: roomId,
         peerId: data.peerId,
       };
-
+        console.log("Player joined:", data);
       // Join socket.io room
       socket.join(roomId);
 
@@ -99,7 +99,7 @@ export const initWs = (httpServer: HttpServer) => {
 
       // Send current players in room to new player
       socket.emit("players-sync", getPlayersInRoom(roomId));
-
+      socket.to(roomId).emit("chatMembers", getPlayersInRoom(roomId));
       // Broadcast new player to others in room
       socket.to(roomId).emit("player-joined", player);
 

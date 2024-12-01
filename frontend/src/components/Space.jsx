@@ -24,11 +24,13 @@ function Space() {
       navigate('/');
     }
     if(isAuthenticated && user){
+     
       const Socket = io('http://localhost:3001');
       setSocket(Socket);
       Socket.on('connect', () => {
         console.log("Chat connected")
         Socket.emit("chatConnect",{name:user.given_name+" "+user.family_name,profile:user.picture,spaceId:spaceId})
+        
       })
       Socket.on("chatMembers",(data)=>{
         console.log(data)

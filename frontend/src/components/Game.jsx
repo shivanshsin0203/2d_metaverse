@@ -10,6 +10,7 @@ const CanvasGame = (props) => {
   const peerRef = useRef(null);
   const peerIdref=useRef(null);
   const localStreamRef = useRef(null);
+  const [remoteStreams, setRemoteStreams] = useState([]);
   const randomSpawnX=Math.random() * 1000;
   const randomSpawnY=Math.random() * 1000;
   const gameStateRef = useRef({
@@ -46,7 +47,9 @@ const CanvasGame = (props) => {
       background: null
     }
   });
-
+  const calculateDistance = (x1, y1, x2, y2) => {
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  };
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -63,33 +66,40 @@ const CanvasGame = (props) => {
     .catch((err) => {
       console.error("Failed to access media devices:", err);
     });
-    async function getPeer(){
-      try{
+   
     peerRef.current = new Peer();
-    peerRef.current.on('open', (id) => {
-      setPeerId(id+"");
-      peerIdref.current=id;
-    });}
-    catch(err){
-      console.log(err)
-    }
-    }
-    getPeer();
-    peerRef.current.on('call', (call) => {
-      // Answer incoming calls
-      if (localStreamRef.current) {
-        call.answer(localStreamRef.current);
-  
-        call.on('stream', (remoteStream) => {
-          callsRef.current.set(call.peer, remoteStream);
-        });
+    const handlePeerConnection = (otherPlayer) => {
+      if (otherPlayer.id !== gameState.player.id && otherPlayer.peerId) {
+        const existingCall = callsRef.current.get(otherPlayer.peerId);
+        
+        if (!existingCall) {
+          const call = peerRef.current.call(otherPlayer.peerId, localStreamRef.current);
+          
+          call.on('stream', (remoteStream) => {
+            console.log(`Received remote stream from ${otherPlayer.peerId}`);
+            callsRef.current.set(otherPlayer.peerId, remoteStream);
+            
+            // Update remote streams state
+            setRemoteStreams(prev => {
+              const streamExists = prev.some(stream => stream.id === remoteStream.id);
+              return streamExists ? prev : [...prev, remoteStream];
+            });
+          });
+        }
       }
-    });
+    };
+
     // Initialize socket connection
     
     
     // Socket event handlers
     socketRef.current.on('connect', () => {
+      
+      peerRef.current.on('open', (id) => {
+        setPeerId(id+"");
+        peerIdref.current=id;
+      
+     
       console.log('Connected to server');
       gameState.player.id = socketRef.current.id;
       
@@ -102,16 +112,40 @@ const CanvasGame = (props) => {
         x: gameState.player.x,
         y: gameState.player.y,
         room: props.gameId,
-        peerId: peerId
+        peerId: id
       });
     });
-
+    });
+    peerRef.current.on('call', (call) => {
+      console.log(`Incoming call from ${call.peer}`);
+      call.answer(localStreamRef.current);
+      
+      call.on('stream', (remoteStream) => {
+        console.log(`Received stream from ${call.peer}`);
+        callsRef.current.set(call.peer, remoteStream);
+        
+        // Update remote streams state
+        setRemoteStreams(prev => {
+          const streamExists = prev.some(stream => stream.id === remoteStream.id);
+          return streamExists ? prev : [...prev, remoteStream];
+        });
+      });
+      
+      call.on('close', () => {
+        console.log(`Call with ${call.peer} closed`);
+        callsRef.current.delete(call.peer);
+        
+        // Remove stream from state
+        setRemoteStreams(prev => prev.filter(stream => stream.id !== call.peer));
+      });
+    });
     socketRef.current.on('players-sync', (players) => {
       gameState.otherPlayers.clear();
       players.forEach(player => {
         if (player.id !== gameState.player.id) {
           gameState.otherPlayers.set(player.id, player);
-          console.log("Player sync:", player);
+          console.log("Player sync:", player)
+          handlePeerConnection(player);
         }
       });
     });
@@ -120,9 +154,13 @@ const CanvasGame = (props) => {
       if (player.id !== gameState.player.id) {
         gameState.otherPlayers.set(player.id, player);
         console.log("Player joined:", player);
+
+        handlePeerConnection(player);
+           
+      
       }
     });
-
+    
     socketRef.current.on('player-moved', (player) => {
       if (player.id !== gameState.player.id) {
         gameState.otherPlayers.set(player.id, player);
@@ -131,6 +169,11 @@ const CanvasGame = (props) => {
 
     socketRef.current.on('player-left', (playerId) => {
       gameState.otherPlayers.delete(playerId);
+      const removedStream = callsRef.current.get(playerId);
+      if (removedStream) {
+        callsRef.current.delete(playerId);
+        setRemoteStreams(prev => prev.filter(stream => stream.id !== removedStream.id));
+      }
     });
 
     // Load sprites
@@ -204,7 +247,19 @@ const CanvasGame = (props) => {
       gameState.camera.x = Math.max(0, Math.min(gameState.camera.x, gameState.world.width - canvas.width));
       gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, gameState.world.height - canvas.height));
       
-      
+      const inRangeStreams = [];
+  gameState.otherPlayers.forEach((player) => {
+    const distance = calculateDistance(gameState.player.x, gameState.player.y, player.x, player.y);
+    if (distance <= 100) {
+      const stream = callsRef.current.get(player.peerId);
+      if (stream) {
+        inRangeStreams.push({ id: player.peerId, stream });
+      }
+    }
+  });
+
+  // Update remote streams state
+  setRemoteStreams(inRangeStreams);
     
 
       // Emit movement if player moved
@@ -257,7 +312,7 @@ const CanvasGame = (props) => {
           );
 
           // Draw player name
-          ctx.font = '14px Arial';
+          ctx.font = '10px Arial';
           ctx.fillStyle = 'white';
           ctx.textAlign = 'center';
           ctx.fillText(
@@ -311,26 +366,28 @@ const CanvasGame = (props) => {
         className="w-full h-full"
         style={{ imageRendering: 'pixelated' }}
       />
-      {Array.from(callsRef.current.entries()).map(([id, stream]) => (
-        <video
-        key={id}
-        autoPlay
-        playsInline
-        className="absolute"
-        style={{
-          top: `0px`,
-          left: `0px`,
-          width: '100px',
-          height: '100px',
-        }}
-        ref={(video) => {
-          if (video && stream) {
-            console.log("Setting video stream for:", id);
-            video.srcObject = stream;
-          }
-        }}
-        />
-      ))}
+      {remoteStreams.map(({ id, stream }, index) => (
+  <video
+    key={id}
+    autoPlay
+    playsInline
+    className="absolute"
+    style={{
+      top: '25px',
+      left: `${105 * index}px`, // Arrange videos horizontally
+      width: '100px',
+      height: '100px',
+    }}
+    ref={(video) => {
+      if (video && video.srcObject !== stream) {
+        console.log(`Setting video stream for player: ${id}`);
+        video.srcObject = stream;
+      }
+    }}
+  />
+))}
+
+
     </>
   );
 };
