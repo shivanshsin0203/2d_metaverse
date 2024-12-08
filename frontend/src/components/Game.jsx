@@ -1,21 +1,21 @@
-import  { useEffect, useRef, useState } from 'react';
-import PropTypes from 'prop-types';
-import io from 'socket.io-client';
-import Peer from 'peerjs';
+import { useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
+import io from "socket.io-client";
+import Peer from "peerjs";
 const CanvasGame = (props) => {
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
   const [peerId, setPeerId] = useState(null);
   const callsRef = useRef(new Map());
   const peerRef = useRef(null);
-  const peerIdref=useRef(null);
+  const peerIdref = useRef(null);
   const localStreamRef = useRef(null);
-  const video=props.video;
-  const audio=props.audio;
+  const video = props.video;
+  const audio = props.audio;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState([]);
-  const randomSpawnX=Math.random() * 1000;
-  const randomSpawnY=Math.random() * 1000;
+  const randomSpawnX = Math.random() * 1000;
+  const randomSpawnY = Math.random() * 1000;
   const gameStateRef = useRef({
     player: {
       id: null,
@@ -24,67 +24,73 @@ const CanvasGame = (props) => {
       width: 52,
       height: 42,
       speed: 2.1,
-      direction: 'front',
-      name: props.name
+      direction: "front",
+      name: props.name,
     },
     otherPlayers: new Map(),
     camera: {
       x: 0,
-      y: 0
+      y: 0,
     },
     world: {
       width: 2000,
-      height: 2000
+      height: 2000,
     },
     keys: {
       up: false,
       down: false,
       left: false,
-      right: false
+      right: false,
     },
     sprites: {
       front: null,
       back: null,
       left: null,
       right: null,
-      background: null
-    }
+      background: null,
+    },
   });
   const calculateDistance = (x1, y1, x2, y2) => {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
   };
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const gameState = gameStateRef.current;
 
     // Set canvas size
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-    socketRef.current = io('http://localhost:3001');
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true})
-    .then((stream) => {
-      localStreamRef.current = stream;
-    })
-    .catch((err) => {
-      console.error("Failed to access media devices:", err);
-    });
-   
+    socketRef.current = io("http://localhost:3001");
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        localStreamRef.current = stream;
+      })
+      .catch((err) => {
+        console.error("Failed to access media devices:", err);
+      });
+
     peerRef.current = new Peer();
     const handlePeerConnection = (otherPlayer) => {
       if (otherPlayer.id !== gameState.player.id && otherPlayer.peerId) {
         const existingCall = callsRef.current.get(otherPlayer.peerId);
-        
+
         if (!existingCall) {
-          const call = peerRef.current.call(otherPlayer.peerId, localStreamRef.current);
-          
-          call.on('stream', (remoteStream) => {
+          const call = peerRef.current.call(
+            otherPlayer.peerId,
+            localStreamRef.current
+          );
+
+          call.on("stream", (remoteStream) => {
             console.log(`Received remote stream from ${otherPlayer.peerId}`);
             callsRef.current.set(otherPlayer.peerId, remoteStream);
-            
+
             // Update remote streams state
-            setRemoteStreams(prev => {
-              const streamExists = prev.some(stream => stream.id === remoteStream.id);
+            setRemoteStreams((prev) => {
+              const streamExists = prev.some(
+                (stream) => stream.id === remoteStream.id
+              );
               return streamExists ? prev : [...prev, remoteStream];
             });
           });
@@ -93,89 +99,90 @@ const CanvasGame = (props) => {
     };
 
     // Initialize socket connection
-    
-    
+
     // Socket event handlers
-    socketRef.current.on('connect', () => {
-      
-      peerRef.current.on('open', (id) => {
-        setPeerId(id+"");
-        peerIdref.current=id;
-      
-     
-      console.log('Connected to server');
-      gameState.player.id = socketRef.current.id;
-      
-      console.log(peerId+"PeerId")
-      console.log(peerRef+"PeerRef")
-      console.log(peerIdref+"PeerIdRef")
-      // Join game
-      socketRef.current.emit('player-join', {
-        name: gameState.player.name,
-        x: gameState.player.x,
-        y: gameState.player.y,
-        room: props.gameId,
-        peerId: id
+    socketRef.current.on("connect", () => {
+      peerRef.current.on("open", (id) => {
+        setPeerId(id + "");
+        peerIdref.current = id;
+
+        console.log("Connected to server");
+        gameState.player.id = socketRef.current.id;
+
+        console.log(peerId + "PeerId");
+        console.log(peerRef + "PeerRef");
+        console.log(peerIdref + "PeerIdRef");
+        // Join game
+        socketRef.current.emit("player-join", {
+          name: gameState.player.name,
+          x: gameState.player.x,
+          y: gameState.player.y,
+          room: props.gameId,
+          peerId: id,
+        });
       });
     });
-    });
-    peerRef.current.on('call', (call) => {
+    peerRef.current.on("call", (call) => {
       console.log(`Incoming call from ${call.peer}`);
       call.answer(localStreamRef.current);
-      
-      call.on('stream', (remoteStream) => {
+
+      call.on("stream", (remoteStream) => {
         console.log(`Received stream from ${call.peer}`);
         callsRef.current.set(call.peer, remoteStream);
-        
+
         // Update remote streams state
-        setRemoteStreams(prev => {
-          const streamExists = prev.some(stream => stream.id === remoteStream.id);
+        setRemoteStreams((prev) => {
+          const streamExists = prev.some(
+            (stream) => stream.id === remoteStream.id
+          );
           return streamExists ? prev : [...prev, remoteStream];
         });
       });
-      
-      call.on('close', () => {
+
+      call.on("close", () => {
         console.log(`Call with ${call.peer} closed`);
         callsRef.current.delete(call.peer);
-        
+
         // Remove stream from state
-        setRemoteStreams(prev => prev.filter(stream => stream.id !== call.peer));
+        setRemoteStreams((prev) =>
+          prev.filter((stream) => stream.id !== call.peer)
+        );
       });
     });
-    socketRef.current.on('players-sync', (players) => {
+    socketRef.current.on("players-sync", (players) => {
       gameState.otherPlayers.clear();
-      players.forEach(player => {
+      players.forEach((player) => {
         if (player.id !== gameState.player.id) {
           gameState.otherPlayers.set(player.id, player);
-          console.log("Player sync:", player)
+          console.log("Player sync:", player);
           handlePeerConnection(player);
         }
       });
     });
 
-    socketRef.current.on('player-joined', (player) => {
+    socketRef.current.on("player-joined", (player) => {
       if (player.id !== gameState.player.id) {
         gameState.otherPlayers.set(player.id, player);
         console.log("Player joined:", player);
 
         handlePeerConnection(player);
-           
-      
       }
     });
-    
-    socketRef.current.on('player-moved', (player) => {
+
+    socketRef.current.on("player-moved", (player) => {
       if (player.id !== gameState.player.id) {
         gameState.otherPlayers.set(player.id, player);
       }
     });
 
-    socketRef.current.on('player-left', (playerId) => {
+    socketRef.current.on("player-left", (playerId) => {
       gameState.otherPlayers.delete(playerId);
       const removedStream = callsRef.current.get(playerId);
       if (removedStream) {
         callsRef.current.delete(playerId);
-        setRemoteStreams(prev => prev.filter(stream => stream.id !== removedStream.id));
+        setRemoteStreams((prev) =>
+          prev.filter((stream) => stream.id !== removedStream.id)
+        );
       }
     });
 
@@ -189,29 +196,45 @@ const CanvasGame = (props) => {
     };
 
     const loadSprites = async () => {
-      gameState.sprites.front = await loadImage('front (2).png');
-      gameState.sprites.back = await loadImage('back (1).png');
-      gameState.sprites.left = await loadImage('left.png');
-      gameState.sprites.right = await loadImage('righ.png');
-      gameState.sprites.background = await loadImage('/ex.png');
+      gameState.sprites.front = await loadImage("front (2).png");
+      gameState.sprites.back = await loadImage("back (1).png");
+      gameState.sprites.left = await loadImage("left.png");
+      gameState.sprites.right = await loadImage("righ.png");
+      gameState.sprites.background = await loadImage("/ex.png");
     };
 
     // Handle keyboard input
     const handleKeyDown = (e) => {
       switch (e.key) {
-        case 'ArrowUp': gameState.keys.up = true; break;
-        case 'ArrowDown': gameState.keys.down = true; break;
-        case 'ArrowLeft': gameState.keys.left = true; break;
-        case 'ArrowRight': gameState.keys.right = true; break;
+        case "ArrowUp":
+          gameState.keys.up = true;
+          break;
+        case "ArrowDown":
+          gameState.keys.down = true;
+          break;
+        case "ArrowLeft":
+          gameState.keys.left = true;
+          break;
+        case "ArrowRight":
+          gameState.keys.right = true;
+          break;
       }
     };
 
     const handleKeyUp = (e) => {
       switch (e.key) {
-        case 'ArrowUp': gameState.keys.up = false; break;
-        case 'ArrowDown': gameState.keys.down = false; break;
-        case 'ArrowLeft': gameState.keys.left = false; break;
-        case 'ArrowRight': gameState.keys.right = false; break;
+        case "ArrowUp":
+          gameState.keys.up = false;
+          break;
+        case "ArrowDown":
+          gameState.keys.down = false;
+          break;
+        case "ArrowLeft":
+          gameState.keys.left = false;
+          break;
+        case "ArrowRight":
+          gameState.keys.right = false;
+          break;
       }
     };
 
@@ -221,53 +244,75 @@ const CanvasGame = (props) => {
 
       if (gameState.keys.left) {
         gameState.player.x -= gameState.player.speed;
-        gameState.player.direction = 'left';
+        gameState.player.direction = "left";
         moved = true;
       }
       if (gameState.keys.right) {
         gameState.player.x += gameState.player.speed;
-        gameState.player.direction = 'right';
+        gameState.player.direction = "right";
         moved = true;
       }
       if (gameState.keys.up) {
         gameState.player.y -= gameState.player.speed;
-        gameState.player.direction = 'back';
+        gameState.player.direction = "back";
         moved = true;
       }
       if (gameState.keys.down) {
         gameState.player.y += gameState.player.speed;
-        gameState.player.direction = 'front';
+        gameState.player.direction = "front";
         moved = true;
       }
 
       // Keep player within bounds
-      gameState.player.x = Math.max(0, Math.min(gameState.player.x, gameState.world.width - gameState.player.width));
-      gameState.player.y = Math.max(0, Math.min(gameState.player.y, gameState.world.height - gameState.player.height));
+      gameState.player.x = Math.max(
+        0,
+        Math.min(
+          gameState.player.x,
+          gameState.world.width - gameState.player.width
+        )
+      );
+      gameState.player.y = Math.max(
+        0,
+        Math.min(
+          gameState.player.y,
+          gameState.world.height - gameState.player.height
+        )
+      );
 
       // Update camera
       gameState.camera.x = gameState.player.x - canvas.width / 2;
       gameState.camera.y = gameState.player.y - canvas.height / 2;
-      gameState.camera.x = Math.max(0, Math.min(gameState.camera.x, gameState.world.width - canvas.width));
-      gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, gameState.world.height - canvas.height));
-      
-      const inRangeStreams = [];
-  gameState.otherPlayers.forEach((player) => {
-    const distance = calculateDistance(gameState.player.x, gameState.player.y, player.x, player.y);
-    if (distance <= 100) {
-      const stream = callsRef.current.get(player.peerId);
-      if (stream) {
-        inRangeStreams.push({ id: player.peerId, stream });
-      }
-    }
-  });
+      gameState.camera.x = Math.max(
+        0,
+        Math.min(gameState.camera.x, gameState.world.width - canvas.width)
+      );
+      gameState.camera.y = Math.max(
+        0,
+        Math.min(gameState.camera.y, gameState.world.height - canvas.height)
+      );
 
-  // Update remote streams state
-  setRemoteStreams(inRangeStreams);
-    
+      const inRangeStreams = [];
+      gameState.otherPlayers.forEach((player) => {
+        const distance = calculateDistance(
+          gameState.player.x,
+          gameState.player.y,
+          player.x,
+          player.y
+        );
+        if (distance <= 100) {
+          const stream = callsRef.current.get(player.peerId);
+          if (stream) {
+            inRangeStreams.push({ id: player.peerId, stream });
+          }
+        }
+      });
+
+      // Update remote streams state
+      setRemoteStreams(inRangeStreams);
 
       // Emit movement if player moved
       if (moved && socketRef.current) {
-        socketRef.current.emit('player-move', {
+        socketRef.current.emit("player-move", {
           x: gameState.player.x,
           y: gameState.player.y,
           direction: gameState.player.direction,
@@ -282,7 +327,10 @@ const CanvasGame = (props) => {
 
       // Draw background
       if (gameState.sprites.background) {
-        const pattern = ctx.createPattern(gameState.sprites.background, 'repeat');
+        const pattern = ctx.createPattern(
+          gameState.sprites.background,
+          "repeat"
+        );
         ctx.save();
         ctx.translate(
           -gameState.camera.x % gameState.sprites.background.width,
@@ -315,9 +363,9 @@ const CanvasGame = (props) => {
           );
 
           // Draw player name
-          ctx.font = '10px Arial';
-          ctx.fillStyle = 'white';
-          ctx.textAlign = 'center';
+          ctx.font = "10px Arial";
+          ctx.fillStyle = "white";
+          ctx.textAlign = "center";
           ctx.fillText(
             player.name,
             player.x - gameState.camera.x + gameState.player.width / 2,
@@ -327,7 +375,7 @@ const CanvasGame = (props) => {
       };
 
       // Draw other players
-      gameState.otherPlayers.forEach(player => {
+      gameState.otherPlayers.forEach((player) => {
         drawPlayer(player);
       });
 
@@ -345,8 +393,8 @@ const CanvasGame = (props) => {
     // Initialize game
     const init = async () => {
       await loadSprites();
-      window.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('keyup', handleKeyUp);
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
       gameLoop();
     };
 
@@ -354,8 +402,8 @@ const CanvasGame = (props) => {
 
     // Cleanup
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
@@ -367,37 +415,33 @@ const CanvasGame = (props) => {
       <canvas
         ref={canvasRef}
         className="w-full h-full"
-        style={{ imageRendering: 'pixelated' }}
+        style={{ imageRendering: "pixelated" }}
       />
       {remoteStreams.map(({ id, stream }, index) => (
-  <video
-    key={id}
-    autoPlay
-    playsInline
-    onClick={() => setIsModalOpen(true)}
-    className="absolute cursor-pointer"
-    style={{
-      top: '35px',
-      left: `${130 * index}px`, // Arrange videos horizontally
-      width: '120px',
-      height: '100px',
-      marginLeft:'420px'
-    }}
-    ref={(video) => {
-      if (video && video.srcObject !== stream) {
-        console.log(`Setting video stream for player: ${id}`);
-        video.srcObject = stream;
-      }
-    }}
-    
-  />
-))}
-         
-         
+        <video
+          key={id}
+          autoPlay
+          playsInline
+          onClick={() => setIsModalOpen(true)}
+          className="absolute cursor-pointer"
+          style={{
+            top: "35px",
+            left: `${130 * index}px`, // Arrange videos horizontally
+            width: "120px",
+            height: "100px",
+            marginLeft: "420px",
+          }}
+          ref={(video) => {
+            if (video && video.srcObject !== stream) {
+              console.log(`Setting video stream for player: ${id}`);
+              video.srcObject = stream;
+            }
+          }}
+        />
+      ))}
+
       {isModalOpen && (
-        <div
-          className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center z-50"
-        >
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center z-50">
           <button
             className="absolute top-4 right-4 text-white text-2xl font-bold"
             onClick={() => setIsModalOpen(false)}
@@ -407,7 +451,9 @@ const CanvasGame = (props) => {
           <div
             className="grid gap-4"
             style={{
-              gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(remoteStreams.length))}, 1fr)`,
+              gridTemplateColumns: `repeat(${Math.ceil(
+                Math.sqrt(remoteStreams.length)
+              )}, 1fr)`,
             }}
           >
             {remoteStreams.map(({ id, stream }, index) => (
@@ -418,7 +464,7 @@ const CanvasGame = (props) => {
                 className="rounded-md border border-gray-300"
                 style={{
                   width: `${100 / Math.ceil(Math.sqrt(remoteStreams.length))}%`,
-                  aspectRatio: '16 / 9',
+                  aspectRatio: "16 / 9",
                 }}
                 ref={(video) => {
                   if (video && video.srcObject !== stream) {
@@ -430,7 +476,6 @@ const CanvasGame = (props) => {
           </div>
         </div>
       )}
-
     </>
   );
 };
@@ -438,7 +483,7 @@ CanvasGame.propTypes = {
   name: PropTypes.string.isRequired,
   gameId: PropTypes.string.isRequired,
   video: PropTypes.bool.isRequired,
-  audio: PropTypes.bool.isRequired
+  audio: PropTypes.bool.isRequired,
 };
 
 export default CanvasGame;

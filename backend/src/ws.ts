@@ -54,6 +54,11 @@ export const initWs = (httpServer: HttpServer) => {
     console.log("Player connected:", socket.id);
    //Chat Logic 
       socket.on("chatConnect", (data: { name: string; profile: string;spaceId:string }) => {
+        const roomState = rooms.get(data.spaceId);
+      if (roomState && roomState.players.size >= 5) {
+        console.log("Room is full:", data.spaceId);
+        socket.emit("room-full", { message: "Room is full" });
+        return;}
       socket.join(data.spaceId);
       
       });
@@ -71,7 +76,9 @@ export const initWs = (httpServer: HttpServer) => {
       room: string;
       peerId?: string;
     }) => {
+    
       // Leave previous room if exists
+
       if (currentRoom) {
         removePlayerFromRoom(currentRoom, socket.id);
         socket.leave(currentRoom);
@@ -80,6 +87,13 @@ export const initWs = (httpServer: HttpServer) => {
       const roomId = data.room;
       currentRoom = roomId;
 
+      const roomState = rooms.get(roomId);
+      if (roomState && roomState.players.size >= 5) {
+        console.log("Room is full:", roomId);
+        
+        currentRoom = null;
+        return;
+      }
       // Create player object
       const player: Player = {
         id: socket.id,
