@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Loading from './Loading';
 // NavigationButton component
 const NavigationButton = ({ children, isActive = false }) => (
   <button
@@ -21,7 +22,8 @@ NavigationButton.propTypes = {
 
 // SpaceCard component
 const SpaceCard = ({ title, lastVisited,onDelete,onClick}) => {
-  const handleDelete = () => {
+  const handleDelete = (event) => {
+    event.stopPropagation();
     onDelete();
   }
   return(
@@ -180,7 +182,7 @@ const MySpace = () => {
     axios.post("http://localhost:3001/deletespace", {email: user.email,roomId:space.roomId});
   };
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (!isAuthenticated) {

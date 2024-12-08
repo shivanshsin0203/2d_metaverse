@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect,useRef,useState } from "react";
 import {DoorOpen, MessageCircle, Share2, UsersRound,Mic,MicOff,Video,VideoOff} from "lucide-react"
 import { io } from "socket.io-client";
+import Loading from "./Loading";
 function Space() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -63,7 +64,7 @@ function Space() {
     }
   }, [socket]);
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <Loading/>
   }
 
   if (!isAuthenticated) {
@@ -97,13 +98,13 @@ function Space() {
   return (
     <div className='flex flex-col w-screen h-screen '>
         <div  className=" w-[100%] h-[5%] bg-[#1E2031] flex justify-between items-center p-3">
-           <Share2 size={24} className="text-gray-400 m-2 cursor-pointer" onClick={() => navigator.clipboard.writeText(window.location.href)} />
+           <Share2 size={24} className="text-gray-400 m-2 cursor-pointer" onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link Copied"); }} />
            <span className=" text-lg text-gray-400">New Space</span>
            <span className="text-sm text-gray-300">{`Space ID ${spaceId}`}</span>
         </div>
         <div className=" h-[92%] w-screen flex  ">
            <div className=" w-[75%] bg-yellow-300">
-               <CanvasGame name={user.given_name+" "+user.family_name} gameId={spaceId}  />
+               <CanvasGame name={user.given_name+" "+user.family_name} gameId={spaceId} video={video} audio={audio} />
            </div>
            <div className=" w-[25%] bg-[#202540] ">
             {chat?(

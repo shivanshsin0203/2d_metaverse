@@ -10,6 +10,9 @@ const CanvasGame = (props) => {
   const peerRef = useRef(null);
   const peerIdref=useRef(null);
   const localStreamRef = useRef(null);
+  const video=props.video;
+  const audio=props.audio;
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState([]);
   const randomSpawnX=Math.random() * 1000;
   const randomSpawnY=Math.random() * 1000;
@@ -59,7 +62,7 @@ const CanvasGame = (props) => {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
     socketRef.current = io('http://localhost:3001');
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true})
     .then((stream) => {
       localStreamRef.current = stream;
     })
@@ -371,12 +374,14 @@ const CanvasGame = (props) => {
     key={id}
     autoPlay
     playsInline
-    className="absolute"
+    onClick={() => setIsModalOpen(true)}
+    className="absolute cursor-pointer"
     style={{
-      top: '25px',
-      left: `${105 * index}px`, // Arrange videos horizontally
-      width: '100px',
+      top: '35px',
+      left: `${130 * index}px`, // Arrange videos horizontally
+      width: '120px',
       height: '100px',
+      marginLeft:'420px'
     }}
     ref={(video) => {
       if (video && video.srcObject !== stream) {
@@ -384,16 +389,56 @@ const CanvasGame = (props) => {
         video.srcObject = stream;
       }
     }}
+    
   />
 ))}
-
+         
+         
+      {isModalOpen && (
+        <div
+          className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center z-50"
+        >
+          <button
+            className="absolute top-4 right-4 text-white text-2xl font-bold"
+            onClick={() => setIsModalOpen(false)}
+          >
+            ×
+          </button>
+          <div
+            className="grid gap-4"
+            style={{
+              gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(remoteStreams.length))}, 1fr)`,
+            }}
+          >
+            {remoteStreams.map(({ id, stream }, index) => (
+              <video
+                key={id}
+                autoPlay
+                playsInline
+                className="rounded-md border border-gray-300"
+                style={{
+                  width: `${100 / Math.ceil(Math.sqrt(remoteStreams.length))}%`,
+                  aspectRatio: '16 / 9',
+                }}
+                ref={(video) => {
+                  if (video && video.srcObject !== stream) {
+                    video.srcObject = stream;
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
     </>
   );
 };
 CanvasGame.propTypes = {
   name: PropTypes.string.isRequired,
-  gameId: PropTypes.string.isRequired
+  gameId: PropTypes.string.isRequired,
+  video: PropTypes.bool.isRequired,
+  audio: PropTypes.bool.isRequired
 };
 
 export default CanvasGame;
