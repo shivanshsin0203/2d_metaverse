@@ -11,7 +11,7 @@ const App = () => {
     <KindeProvider
 		clientId={import.meta.env.VITE_CLIENT_ID}
 		domain={import.meta.env.VITE_DOMAIN}
-		redirectUri="https://2d-metaverse-coral.vercel.app/space"
+		redirectUri="https://2d-metaverse-coral.vercel.app"
 		logoutUri="https://2d-metaverse-coral.vercel.app"
 	>
     <Router>
