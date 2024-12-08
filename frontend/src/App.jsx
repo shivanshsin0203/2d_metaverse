@@ -3,8 +3,9 @@ import Homepage from './components/Home';
 import Space from './components/Space';
 import {KindeProvider} from "@kinde-oss/kinde-auth-react";
 import MySpace from './components/Myspace';
+import { Toaster } from 'react-hot-toast';
 const App = () => {
-  console.log(import.meta.env.VITE_CLIENT_ID);
+ 
   return (
     <KindeProvider
 		clientId={import.meta.env.VITE_CLIENT_ID}
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/myspace" element={<Space />} />
        </Routes>
     </Router>
+    <Toaster position='top-right'/>
     </KindeProvider>
   );
 };

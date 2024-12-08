@@ -55,7 +55,7 @@ export const initWs = (httpServer: HttpServer) => {
    //Chat Logic 
       socket.on("chatConnect", (data: { name: string; profile: string;spaceId:string }) => {
         const roomState = rooms.get(data.spaceId);
-      if (roomState && roomState.players.size >= 5) {
+      if (roomState && roomState.players.size >= 4) {
         console.log("Room is full:", data.spaceId);
         socket.emit("room-full", { message: "Room is full" });
         return;}
@@ -88,7 +88,7 @@ export const initWs = (httpServer: HttpServer) => {
       currentRoom = roomId;
 
       const roomState = rooms.get(roomId);
-      if (roomState && roomState.players.size >= 5) {
+      if (roomState && roomState.players.size >= 4) {
         console.log("Room is full:", roomId);
         
         currentRoom = null;

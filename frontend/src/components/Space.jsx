@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { io } from "socket.io-client";
 import Loading from "./Loading";
+import toast from "react-hot-toast";
 function Space() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -42,7 +43,7 @@ function Space() {
           // Add room full event handler
           const handleRoomFull = (data) => {
             console.log(data.message);
-            alert(data.message);
+            toast.error("More than 5 members in room join with a new room Id");
             navigate("/space"); // Redirect to space selection page
           };
       
@@ -123,7 +124,7 @@ function Space() {
           className="text-gray-400 m-2 cursor-pointer"
           onClick={() => {
             navigator.clipboard.writeText(window.location.href);
-            alert("Link Copied");
+            toast.success("Link is copied !");
           }}
         />
         <span className=" text-lg text-gray-400">New Space</span>
