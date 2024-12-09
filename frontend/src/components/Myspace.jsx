@@ -176,6 +176,7 @@ const MySpace = () => {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      console.log("User not authenticated. Redirecting to login page...");
       navigate("/");
     } else {
       async function getSpaces() {

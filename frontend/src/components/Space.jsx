@@ -33,6 +33,7 @@ function Space() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      console.log("User not authenticated");
       navigate("/");
     }
     if (isAuthenticated && user) {
